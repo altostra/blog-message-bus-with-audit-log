@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  CustomersTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: ""
+  OrdersTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: ""
+  NotificationsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: ""
+  MessagesQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      DelaySeconds: 0
+      MaximumMessageSize: 262144
+      MessageRetentionPeriod: 345600
+      RedrivePolicy:
+        maxReceiveCount: 1
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - FailedMessagesQueue
+            - Arn
+    DependsOn: FailedMessagesQueue
+  StoreMessagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: functions/StoreMessagesFunction.handler
+      Runtime: nodejs12.x
+      MemorySize: 512
+      Timeout: 6
+      Environment:
+        Variables:
+          ALTO_FUNCTION_ID: StoreMessagesFunction
+          ALTO_FUNCTION_NAME: store-messages
+          ALTO_DEPLOYMENT_TIME: "2021-09-02T08:47:09.998Z"
+          TABLE_MESSAGESLOGTABLE:
+            Ref: MessagesLogTable
+      Layers: []
+      Events:
+        MessagesQueue:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+                - MessagesQueue
+                - Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName:
+              Ref: MessagesLogTable
+  MessagesLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+  FailedMessagesQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      DelaySeconds: 0
+      MaximumMessageSize: 262144
+      MessageRetentionPeriod: 345600
+  OrdersTopicMessagesQueueSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      TopicArn:
+        Ref: OrdersTopic
+      Endpoint:
+        Fn::GetAtt:
+          - MessagesQueue
+          - Arn
+  MessagesQueueQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - Ref: MessagesQueue
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: sqs:SendMessage
+            Resource:
+              Fn::GetAtt:
+                - MessagesQueue
+                - Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  Ref: OrdersTopic
+          - Effect: Allow
+            Principal: "*"
+            Action: sqs:SendMessage
+            Resource:
+              Fn::GetAtt:
+                - MessagesQueue
+                - Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  Ref: CustomersTopic
+          - Effect: Allow
+            Principal: "*"
+            Action: sqs:SendMessage
+            Resource:
+              Fn::GetAtt:
+                - MessagesQueue
+                - Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  Ref: NotificationsTopic
+  CustomersTopicMessagesQueueSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      TopicArn:
+        Ref: CustomersTopic
+      Endpoint:
+        Fn::GetAtt:
+          - MessagesQueue
+          - Arn
+  NotificationsTopicMessagesQueueSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      TopicArn:
+        Ref: NotificationsTopic
+      Endpoint:
+        Fn::GetAtt:
+          - MessagesQueue
+          - Arn

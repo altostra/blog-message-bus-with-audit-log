@@ -1,0 +1,167 @@
+{
+	"id": "Blog-Message-Bus-8h00n0s",
+	"name": "Blog - Message Bus",
+	"description": "",
+	"created": "2021-09-01T06:54:04.483Z",
+	"blueprints": [
+		{
+			"version": "2019-10-24",
+			"connections": {
+				"OrdersTopic": {
+					"MessagesQueue": {
+						"type": "connection.topic-subscription",
+						"from": "OrdersTopic",
+						"to": "MessagesQueue"
+					}
+				},
+				"CustomersTopic": {
+					"MessagesQueue": {
+						"type": "connection.topic-subscription",
+						"from": "CustomersTopic",
+						"to": "MessagesQueue"
+					}
+				},
+				"NotificationsTopic": {
+					"MessagesQueue": {
+						"type": "connection.topic-subscription",
+						"from": "NotificationsTopic",
+						"to": "MessagesQueue"
+					}
+				},
+				"ApiEndpoint01": {},
+				"Function01": {},
+				"Queue02": {},
+				"Function02": {},
+				"Queue03": {},
+				"MessagesQueue": {
+					"StoreMessagesFunction": {
+						"type": "connection.trigger",
+						"from": "MessagesQueue",
+						"to": "StoreMessagesFunction"
+					},
+					"FailedMessagesQueue": {
+						"type": "connection.queue.dead-letter",
+						"retriesCount": 1,
+						"from": "MessagesQueue",
+						"to": "FailedMessagesQueue"
+					}
+				},
+				"StoreMessagesFunction": {
+					"MessagesLogTable": {
+						"type": "connection.resource-access",
+						"accessLevel": "read-write",
+						"from": "StoreMessagesFunction",
+						"to": "MessagesLogTable"
+					}
+				},
+				"Function03": {}
+			},
+			"resources": {
+				"CustomersTopic": {
+					"type": "resource.notification-topic",
+					"name": "customers",
+					"displayName": "",
+					"id": "CustomersTopic"
+				},
+				"OrdersTopic": {
+					"type": "resource.notification-topic",
+					"name": "orders",
+					"displayName": "",
+					"id": "OrdersTopic"
+				},
+				"NotificationsTopic": {
+					"type": "resource.notification-topic",
+					"name": "notifications",
+					"displayName": "",
+					"id": "NotificationsTopic"
+				},
+				"MessagesQueue": {
+					"type": "resource.message-queue",
+					"name": "messages",
+					"delay": 0,
+					"retentionPeriod": 345600,
+					"maxMessageSize": 262144,
+					"id": "MessagesQueue"
+				},
+				"StoreMessagesFunction": {
+					"type": "resource.compute.function",
+					"name": "store-messages",
+					"entryPoint": "functions/StoreMessagesFunction.handler",
+					"memory": 512,
+					"runtime": "nodejs12.x",
+					"timeout": 6,
+					"id": "StoreMessagesFunction",
+					"layers": []
+				},
+				"MessagesLogTable": {
+					"type": "resource.table",
+					"name": "messages-log",
+					"tableName": "",
+					"key": {
+						"hash": {
+							"type": "STRING",
+							"name": "pk"
+						}
+					},
+					"aws": {
+						"billingModel": "PAY_PER_REQUEST"
+					},
+					"id": "MessagesLogTable"
+				},
+				"FailedMessagesQueue": {
+					"type": "resource.message-queue",
+					"name": "failed-messages",
+					"delay": 0,
+					"retentionPeriod": 345600,
+					"maxMessageSize": 262144,
+					"id": "FailedMessagesQueue"
+				}
+			},
+			"metadata": {
+				"designer": {
+					"resourcePositions": {
+						"CustomersTopic": {
+							"x": 65,
+							"y": 330,
+							"z": 0
+						},
+						"OrdersTopic": {
+							"x": 65,
+							"y": 230,
+							"z": 0
+						},
+						"NotificationsTopic": {
+							"x": 65,
+							"y": 430,
+							"z": 0
+						},
+						"MessagesQueue": {
+							"x": 350,
+							"y": 330,
+							"z": 0
+						},
+						"StoreMessagesFunction": {
+							"x": 605,
+							"y": 330,
+							"z": 0
+						},
+						"MessagesLogTable": {
+							"x": 885,
+							"y": 330,
+							"z": 0
+						},
+						"FailedMessagesQueue": {
+							"x": 605,
+							"y": 430,
+							"z": 0
+						}
+					}
+				}
+			},
+			"id": "Blog-Message-Bus-8h00n0s",
+			"name": "Blog - Message Bus",
+			"unsafe": false
+		}
+	],
+	"type": "altostra"
+}
